@@ -1,0 +1,46 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Validate skill frontmatter
+        run: |
+          python - <<'PY'
+          import pathlib, re, sys, yaml
+          bad = 0
+          for p in sorted(pathlib.Path(".agents/skills").glob("*/SKILL.md")):
+              parts = p.read_text(encoding="utf-8").split("---")
+              fm = yaml.safe_load(parts[1]) if len(parts) > 2 else {}
+              name, desc = fm.get("name", ""), fm.get("description", "")
+              if name != p.parent.name or not re.fullmatch(r"[a-z0-9-]{1,64}", name) or not 0 < len(desc) <= 1024:
+                  print(f"invalid frontmatter: {p}"); bad += 1
+          sys.exit(bad)
+          PY
+
+      - name: Prepared SQL passes the guard
+        run: |
+          for q in .agents/skills/catalog-crawler/queries/*.sql; do
+            python tools/dbq.py --check --file "$q" > /dev/null || { echo "rejected: $q"; exit 1; }
+          done
+
+      - name: Guard rejects unsafe SQL
+        run: |
+          set +e
+          for s in "DELETE FROM t" "UPDATE t SET a = 1" "DROP TABLE t" "SELECT 1; SELECT 2" \
+                   "SELECT pg_sleep(5)" "SELECT * INTO z FROM t" "SELECT * FROM t FOR UPDATE" \
+                   "EXPLAIN ANALYZE SELECT 1" "WITH x AS (DELETE FROM t RETURNING *) SELECT * FROM x"; do
+            python tools/dbq.py --check "$s" > /dev/null 2>&1
+            if [ $? -ne 2 ]; then echo "NOT rejected: $s"; exit 1; fi
+          done
+          echo "all unsafe statements rejected"

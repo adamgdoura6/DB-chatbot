@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Earlier Python prototype, kept locally only
+_archive/
