@@ -164,38 +164,58 @@ def dbq(sql: str, url: str | None) -> tuple[int, dict | None, str]:
     return r.returncode, data, r.stderr.strip()
 
 
-def check(provider_key: str | None, url: str | None = None) -> int:
+def inspect(url: str | None = None) -> dict:
+    """Connect and check the login. Used by check() here and by the web app's backend.
+
+    Returns {"code": dbq exit code, "error"} on failure, otherwise {"code": 0, "db", "login", "version",
+    "problems": [what the login can do beyond reading], "readable_tables": int or None, "privilege_error"}.
+    """
     code, ident, err = dbq(IDENTITY_SQL, url)
     if code != 0:
-        print(f"FAILED  could not connect\n        {err}")
-        if provider_key in PROVIDERS:
-            print(f"        see audit-your-database/{PROVIDERS[provider_key].guide} (troubleshooting)")
-        return code
+        return {"code": code, "error": err}
     row = ident["rows"][0]
-    print(f"OK      connected to database '{row['db']}' as '{row['login']}'")
-    print(f"        {str(row['server_version']).split(',')[0]}")
+    result = {"code": 0, "db": row["db"], "login": row["login"],
+              "version": str(row["server_version"]).split(",")[0],
+              "problems": [], "readable_tables": None, "privilege_error": None}
 
     code, priv, err = dbq(PRIVILEGE_SQL, url)
     if code != 0:
-        print(f"WARN    could not check privileges: {err}")
-        return 0
+        result["privilege_error"] = err
+        return result
     p = priv["rows"][0]
-    problems = [label for flag, label in [
+    result["problems"] = [label for flag, label in [
         (p["superuser"], "is a superuser"),
         (p["bypass_rls"], "bypasses row level security"),
         (p["can_create"], "can create schemas in this database"),
         (p["writable_tables"], f"can write to {p['writable_tables']} table(s)"),
     ] if flag]
-    if problems:
-        print(f"WARN    this login {', '.join(problems)}.")
+    result["readable_tables"] = p["readable_tables"]
+    return result
+
+
+def check(provider_key: str | None, url: str | None = None) -> int:
+    r = inspect(url)
+    if r["code"] != 0:
+        print(f"FAILED  could not connect\n        {r['error']}")
+        if provider_key in PROVIDERS:
+            print(f"        see audit-your-database/{PROVIDERS[provider_key].guide} (troubleshooting)")
+        return r["code"]
+    print(f"OK      connected to database '{r['db']}' as '{r['login']}'")
+    print(f"        {r['version']}")
+
+    if r["privilege_error"]:
+        print(f"WARN    could not check privileges: {r['privilege_error']}")
+        return 0
+    if r["problems"]:
+        print(f"WARN    this login {', '.join(r['problems'])}.")
         print("        dbq still runs every query read-only, but use a dedicated read-only role:")
         print("        audit-your-database/providers/readonly-role.sql")
     else:
         print("OK      the login is read-only")
-    if not p["readable_tables"]:
+    if not r["readable_tables"]:
         print("WARN    the login can read 0 tables: grant SELECT on the schemas to audit (readonly-role.sql)")
     else:
-        print(f"OK      the login can read {p['readable_tables']} table(s) and view(s)")
+        print(f"OK      the login can read {r['readable_tables']} table(s) and view(s)")
     print("\nNext: open audit-your-database/ in your agent and say \"Audit my database\" (see its README).")
     return 0
 
