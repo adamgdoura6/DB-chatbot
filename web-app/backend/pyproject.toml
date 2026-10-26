@@ -1,0 +1,16 @@
+[project]
+name = "db-chatbot-web-backend"
+version = "0.1.0"
+description = "Backend for the DB-chatbot web app"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.115",
+    "pydantic-settings>=2.0.3",
+    # shared/dbq.py and audit-your-database/connect.py run with this environment's
+    # Python (connection checks here, and `python` for the agent), so they need
+    # the repository's requirements.txt too.
+    "psycopg[binary]>=3.2",
+    "sqlglot>=25",
+    "PyYAML>=6",
+]

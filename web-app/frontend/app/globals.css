@@ -1,0 +1,110 @@
+:root {
+  --bg: #fbf9f4;
+  --ink: #5f5a50;
+  --caret: #b3a58c;
+  --select: #ebe3d3;
+  --line: 1.6em;
+  --col: min(380px, calc(100vw - 72px));
+}
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+}
+/* The conversation fills the page, the input sits below it where chatbots put their message box. */
+body {
+  display: flex;
+  flex-direction: column;
+}
+::selection { background: var(--select); color: var(--ink); }
+
+/* Conversation: same column as the input, history fades out toward the top. */
+.log {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 45%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 45%);
+  font: 300 16px/1.6 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+.log::-webkit-scrollbar { display: none; }
+.log > :first-child { margin-top: auto; }
+.msg {
+  box-sizing: content-box;
+  width: var(--col);
+  margin: 0 auto;
+  padding: 0 20px;
+  white-space: pre-wrap;
+}
+.you {
+  margin-top: 28px;
+  color: var(--caret);
+  animation: rise 0.45s ease-out;
+}
+.reply {
+  margin-top: 10px;
+  color: var(--ink);
+}
+.reply .w { animation: ink 0.5s ease-out; }
+.dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  margin: 10px 0;
+  border-radius: 50%;
+  background: var(--caret);
+  animation: breathe 1.6s ease-in-out infinite;
+}
+/* SQL, tables and caveats: barely there until hovered or tapped. */
+.details {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.18;
+  transition: opacity 0.4s ease;
+  animation: ink 0.8s ease-out;
+}
+.reply:hover .details, .reply.open .details { opacity: 0.85; }
+.details code {
+  display: block;
+  margin: 4px 0;
+  font: 12px/1.5 ui-monospace, Consolas, monospace;
+}
+
+/* Input: bottom centre, no box; it grows upward because the conversation above it shrinks. */
+.say {
+  flex: none;
+  box-sizing: content-box;
+  width: var(--col);
+  height: var(--line);
+  max-height: calc(var(--line) * 3);
+  margin: 16px auto 40px;
+  padding: 14px 20px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: transparent;
+  color: var(--ink);
+  caret-color: transparent;
+  font: 300 16px/1.6 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+.say::-webkit-scrollbar { display: none; }
+/* The cursor stays hidden on the blank page and appears once there is text
+   (the placeholder is a single space, so :placeholder-shown means "empty"). */
+.say:not(:placeholder-shown) { caret-color: var(--caret); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+@keyframes ink { from { opacity: 0; } }
+@keyframes breathe { 50% { opacity: 0.25; transform: scale(0.7); } }
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
