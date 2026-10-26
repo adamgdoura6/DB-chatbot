@@ -9,7 +9,7 @@ dependencies = [
     "pydantic-settings>=2.0.3",
     # shared/dbq.py and audit-your-database/connect.py run with this environment's
     # Python (connection checks here, and `python` for the agent), so they need
-    # the repository's requirements.txt too.
+    # the repository's dependencies (pyproject.toml at the root) too.
     "psycopg[binary]>=3.2",
     "sqlglot>=25",
     "PyYAML>=6",

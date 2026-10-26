@@ -1,0 +1,15 @@
+[project]
+name = "db-chatbot"
+version = "0.1.0"
+description = "Turn any AI coding agent into a chatbot for your company database"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg[binary]>=3.2",
+    "sqlglot>=25",
+    "PyYAML>=6",
+]
+
+[tool.uv]
+# Scripts and skills, not an installable package
+package = false
