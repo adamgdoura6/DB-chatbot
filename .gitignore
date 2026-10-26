@@ -5,3 +5,7 @@ __pycache__/
 
 # Earlier Python prototype, kept locally only
 _archive/
+
+# Audit output and learning data (one folder per database): customer data, local only, never committed
+knowledge/
+learning/

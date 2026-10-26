@@ -10,7 +10,7 @@ connect() is called once per step and says what it needs next:
   unsupported    the provider is planned, not supported yet
   risky          an owner/admin login; call again with force=True to connect anyway
   failed         could not connect ("error" has the reason, "hint" a likely fix)
-  connected      saved to .env
+  connected      saved to .env under its name, now the active database
 """
 
 import importlib.util
@@ -39,7 +39,8 @@ HINTS = [
 ]
 
 
-def connect(provider: str, url: str, password: Optional[str] = None, force: bool = False) -> dict:
+def connect(provider: str, url: str, password: Optional[str] = None, force: bool = False,
+            name: Optional[str] = None) -> dict:
     p = cli.PROVIDERS.get(provider)
     if p is None:
         return {"status": "invalid", "error": f"unknown provider {provider!r}"}
@@ -66,6 +67,9 @@ def connect(provider: str, url: str, password: Optional[str] = None, force: bool
         netloc += f":{port}" if port else ""
         url = urlunsplit(parts._replace(netloc=netloc))
     url = cli.with_sslmode(url, p.sslmode)
+    name = name or cli.suggest_name(url)
+    if not cli.shared_dbq.valid_name(name):
+        return {"status": "invalid", "error": "the name takes lowercase letters, digits, - and _"}
 
     risk = cli.risky_login(url)
     if risk and not force:
@@ -77,9 +81,9 @@ def connect(provider: str, url: str, password: Optional[str] = None, force: bool
         hint = next((h for needle, h in HINTS if needle.lower() in error.lower()), None)
         return {"status": "failed", "error": error, "hint": hint}
 
-    cli.write_env({"DBCHAT_PROVIDER": provider, "DBCHAT_DATABASE_URL": url})
+    cli.save(name, provider, url)
     return {
-        "status": "connected", "provider": p.label, "db": r["db"], "login": r["login"], "version": r["version"],
+        "status": "connected", "name": name, "provider": p.label, "db": r["db"], "login": r["login"], "version": r["version"],
         "problems": r["problems"], "readable_tables": r["readable_tables"],
         "privilege_error": r["privilege_error"] and hide(r["privilege_error"], url),
     }

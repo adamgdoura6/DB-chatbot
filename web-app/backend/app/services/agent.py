@@ -28,12 +28,10 @@ SESSION_ID = re.compile(r"[0-9a-f-]{36}")
 ALLOWED_TOOLS = [
     "Read", "Glob", "Grep", "Write", "Edit", "Task", "TodoWrite",
     "Bash(python ../shared/dbq.py:*)", "Bash(python shared/dbq.py:*)",
-    "Bash(python connect.py --check)", "Bash(python connect.py --list)",
+    "Bash(python connect.py --check)", "Bash(python connect.py --list)", "Bash(python connect.py --bind)",
     "Bash(python audit-your-database/connect.py --check)",
     "Bash(python ../audit-your-database/connect.py --check)",
     "Bash(cd:*)", "Bash(ls:*)",
-    "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)", "Bash(git add:*)",
-    "Bash(git commit:*)", "Bash(git switch:*)", "Bash(git revert:*)",
 ]
 
 # How the page shows a reply: prose first, the "show your work" part separately.

@@ -16,8 +16,14 @@ Usage:
   python shared/dbq.py --cost "SELECT ..."          # EXPLAIN cost only, does not run the query
   python shared/dbq.py --check "SELECT ..."         # print the guarded SQL, do not run it
 
-Connection: DBCHAT_DATABASE_URL (environment or .env). Optional DBCHAT_TENANT.
-Exit codes: 0 ok, 2 rejected by guard, 3 database error, 4 configuration error.
+  python shared/dbq.py --active                     # which database is active, and its folders
+
+Several databases: each has a name, its own knowledge/<name>/ and learning/<name>/, and its connection in the
+root .env (DBCHAT_URL__<name>, optional DBCHAT_TENANT__<name>). DBCHAT_DATABASE (environment or .env) picks the
+active one; DBCHAT_DATABASE_URL in the environment overrides its URL. knowledge/<name>/database.json records
+which database the audit describes, and dbq refuses to run against any other one (its policies and PII rules
+would be the wrong ones). See connect.py --use and --bind.
+Exit codes: 0 ok, 2 rejected by guard, 3 database error, 4 configuration error, 5 not the audited database.
 """
 
 from __future__ import annotations
@@ -31,9 +37,13 @@ import sys
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
-POLICIES = ROOT / "knowledge" / "policies.yaml"
+ENV = ROOT / ".env"
+POLICIES_TEMPLATE = ROOT / "shared" / "policies-template.yaml"
+DATABASE_NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,62}")
+RESERVED_NAMES = {"domains", "tables", "traces", "proposals", "eval"}  # folders of the single-database layout
 HARD_MAX_ROWS = 20000
 
 DENY_FUNCTIONS = {
@@ -95,17 +105,81 @@ def mask(value, kind: str | None):
     return f"<{kind}:{digest}>"
 
 
+# ---------------------------------------------------------------- databases
+
+
+def read_env() -> dict[str, str]:
+    values = {}
+    if ENV.exists():
+        for line in ENV.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                values[k.strip()] = v.strip().strip('"').strip("'")
+    return values
+
+
+def valid_name(name: str) -> bool:
+    return bool(DATABASE_NAME.fullmatch(name)) and name not in RESERVED_NAMES
+
+
+def url_key(name: str) -> str:
+    return f"DBCHAT_URL__{name}"
+
+
+def provider_key(name: str) -> str:
+    return f"DBCHAT_PROVIDER__{name}"
+
+
+def tenant_key(name: str) -> str:
+    return f"DBCHAT_TENANT__{name}"
+
+
+def saved_databases() -> list[str]:
+    return sorted(k.removeprefix(url_key("")) for k in read_env() if k.startswith(url_key("")))
+
+
+def active_database() -> str | None:
+    return os.getenv("DBCHAT_DATABASE") or read_env().get("DBCHAT_DATABASE") or None
+
+
+def require_active() -> str:
+    name = active_database()
+    if not name:
+        if read_env().get("DBCHAT_DATABASE_URL") or (ROOT / "knowledge" / "overview.md").exists():
+            print("dbq: this copy still has the single-database layout; the user runs "
+                  "`python audit-your-database/connect.py --migrate <name>` once", file=sys.stderr)
+        else:
+            print("dbq: no database selected; run audit-your-database/connect.py (or connect.py --use <name>)",
+                  file=sys.stderr)
+        sys.exit(4)
+    return name
+
+
+def knowledge_dir(name: str | None = None) -> Path:
+    return ROOT / "knowledge" / (name or require_active())
+
+
+def learning_dir(name: str | None = None) -> Path:
+    return ROOT / "learning" / (name or require_active())
+
+
+def tenant(name: str) -> str | None:
+    return os.getenv("DBCHAT_TENANT") or read_env().get(tenant_key(name)) or None
+
+
 # ---------------------------------------------------------------- policies
 
 
-def load_policies() -> dict:
-    if not POLICIES.exists():
+def load_policies(name: str | None) -> dict:
+    """The active database's policies; none without an active database (only --check can get that far)."""
+    path = knowledge_dir(name) / "policies.yaml" if name else None
+    if path is None or not path.exists():
         return {}
     try:
         import yaml
     except ImportError:
-        sys.exit("dbq: knowledge/policies.yaml exists but PyYAML is not installed (pip install pyyaml)")
-    return yaml.safe_load(POLICIES.read_text(encoding="utf-8")) or {}
+        sys.exit(f"dbq: {path.relative_to(ROOT)} exists but PyYAML is not installed (uv sync)")
+    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
 # ---------------------------------------------------------------- guard
@@ -134,7 +208,7 @@ def guard(sql: str, policies: dict, tenant: str | None) -> str:
         if WRITE_WORDS.search(re.sub(r"'[^']*'", "''", sql)):
             raise Rejected("write or session keyword found (install sqlglot for precise checks)")
         if policies.get("mandatory_filters") or (tenant and policies.get("tenant_column")):
-            raise Rejected("policies require filter injection: pip install sqlglot")
+            raise Rejected("policies require filter injection, but sqlglot is not installed (uv sync)")
         return sql
 
     if re.match(r"^\s*show\b", sql, re.I):
@@ -209,15 +283,10 @@ def guard(sql: str, policies: dict, tenant: str | None) -> str:
 # ---------------------------------------------------------------- database
 
 
-def database_url() -> str:
-    url = os.getenv("DBCHAT_DATABASE_URL")
-    env = ROOT / ".env"
-    if not url and env.exists():
-        for line in env.read_text(encoding="utf-8").splitlines():
-            if line.strip().startswith("DBCHAT_DATABASE_URL="):
-                url = line.split("=", 1)[1].strip().strip('"').strip("'")
+def database_url(name: str | None) -> str:
+    url = os.getenv("DBCHAT_DATABASE_URL") or (read_env().get(url_key(name)) if name else None)
     if not url:
-        print("dbq: DBCHAT_DATABASE_URL is not set (environment or .env); run audit-your-database/connect.py",
+        print(f"dbq: no connection saved for database '{name}'; run audit-your-database/connect.py",
               file=sys.stderr)
         sys.exit(4)
     if not url.startswith(("postgres://", "postgresql://")):
@@ -227,14 +296,57 @@ def database_url() -> str:
     return url
 
 
-def run(sql: str, max_rows: int, timeout_ms: int) -> tuple[list[str], list[tuple], bool]:
+def fingerprint(url: str) -> dict:
+    """Which database a URL points at: host, port and database name. Never the login or the password."""
+    parts = urlsplit(url)
+    user = unquote(parts.username or "")
+    return {"host": (parts.hostname or "localhost").lower(), "port": parts.port or 5432,
+            "database": unquote(parts.path.lstrip("/")) or user}  # libpq defaults the database to the login
+
+
+def binding_file(name: str) -> Path:
+    return knowledge_dir(name) / "database.json"
+
+
+def bound_database(name: str) -> dict | None:
+    """The database knowledge/<name>/ describes, or None if the audit has not recorded one yet."""
+    path = binding_file(name)
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {k: data.get(k) for k in ("host", "port", "database")}
+
+
+def mismatch(name: str, url: str) -> str | None:
+    """Why this URL is not the database audited as <name>, or None if it is (or none is recorded yet)."""
+    bound = bound_database(name)
+    if bound is None:
+        return None
+    current = fingerprint(url)
+    if current == bound:
+        return None
+    return (f"the connection points at database '{current['database']}' on {current['host']}:{current['port']}, "
+            f"but knowledge/{name}/ is the audit of '{bound['database']}' on {bound['host']}:{bound['port']}")
+
+
+def require_audited_database(name: str, url: str) -> None:
+    problem = mismatch(name, url)
+    if problem:
+        print(f"dbq: REFUSED: {problem}. Its policies and PII rules do not fit this database.\n"
+              "  Another database: save it under its own name (`python audit-your-database/connect.py`).\n"
+              "  The same database at a new address: the user runs `python audit-your-database/connect.py --bind`"
+              " in their own terminal.", file=sys.stderr)
+        sys.exit(5)
+
+
+def run(sql: str, url: str, max_rows: int, timeout_ms: int) -> tuple[list[str], list[tuple], bool]:
     try:
         import psycopg
     except ImportError:
-        print("dbq: pip install 'psycopg[binary]'", file=sys.stderr)
+        print("dbq: psycopg is not installed: run uv sync at the repository root", file=sys.stderr)
         sys.exit(4)
     try:
-        with psycopg.connect(database_url(), autocommit=False, connect_timeout=10) as conn:
+        with psycopg.connect(url, autocommit=False, connect_timeout=10) as conn:
             with conn.cursor() as cur:
                 cur.execute("BEGIN READ ONLY")
                 cur.execute(f"SET LOCAL statement_timeout = {int(timeout_ms)}")
@@ -270,22 +382,33 @@ def main():
     ap.add_argument("--timeout-ms", type=int, default=15000)
     ap.add_argument("--cost", action="store_true", help="only print the EXPLAIN total cost")
     ap.add_argument("--check", action="store_true", help="only print the guarded SQL")
+    ap.add_argument("--active", action="store_true", help="print the active database and its folders")
+    ap.add_argument("--any-database", action="store_true", help=argparse.SUPPRESS)  # connect.py's login checks only
     a = ap.parse_args()
 
+    if a.active:
+        name = require_active()
+        print(f"database:  {name}\nknowledge: knowledge/{name}/\nlearning:  learning/{name}/")
+        return
     sql = Path(a.file).read_text(encoding="utf-8") if a.file else (sys.stdin.read() if a.sql in (None, "-") else a.sql)
-    policies = load_policies()
+    # --check needs no database; connect.py's login checks run before a new connection has a name
+    name = active_database() if a.check or a.any_database else require_active()
+    policies = load_policies(name)
     try:
-        guarded = guard(sql, policies, os.getenv("DBCHAT_TENANT"))
+        guarded = guard(sql, policies, tenant(name) if name else None)
     except Rejected as e:
         print(f"dbq: REJECTED: {e}", file=sys.stderr)
         sys.exit(2)
     if a.check:
         print(guarded)
         return
+    url = database_url(name)
+    if name and not a.any_database:
+        require_audited_database(name, url)
     max_rows = max(1, min(a.max_rows or int(policies.get("max_rows", 200)), HARD_MAX_ROWS))
 
     if a.cost:
-        _, rows, _ = run(f"EXPLAIN (FORMAT JSON) {guarded}", 1, 5000)
+        _, rows, _ = run(f"EXPLAIN (FORMAT JSON) {guarded}", url, 1, 5000)
         plan = rows[0][0]
         plan = json.loads(plan) if isinstance(plan, str) else plan
         cost = plan[0]["Plan"]["Total Cost"]
@@ -295,7 +418,7 @@ def main():
 
     limit = policies.get("max_plan_cost")
     if limit and not re.match(r"^\s*(explain|show)\b", guarded, re.I):
-        _, plan_rows, _ = run(f"EXPLAIN (FORMAT JSON) {guarded}", 1, 5000)
+        _, plan_rows, _ = run(f"EXPLAIN (FORMAT JSON) {guarded}", url, 1, 5000)
         plan = plan_rows[0][0]
         cost = (json.loads(plan) if isinstance(plan, str) else plan)[0]["Plan"]["Total Cost"]
         if cost > limit:
@@ -303,7 +426,7 @@ def main():
                   "filter on indexed columns, narrow the time range, or aggregate less", file=sys.stderr)
             sys.exit(2)
 
-    cols, rows, truncated = run(guarded, max_rows, min(a.timeout_ms, int(policies.get("statement_timeout_ms", 60000))))
+    cols, rows, truncated = run(guarded, url, max_rows, min(a.timeout_ms, int(policies.get("statement_timeout_ms", 60000))))
     extra = {c.split(".")[-1].lower() for c in policies.get("pii_columns", [])}
     kinds = [pii_kind_for_column(c, extra) for c in cols]
     masked = [[mask(_plain(v), k) for v, k in zip(r, kinds)] for r in rows]
