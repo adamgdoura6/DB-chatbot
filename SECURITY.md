@@ -13,7 +13,7 @@ Include:
 You will get an answer within a few days. Fixes are released as soon as possible, with credit if you want it.
 
 ## In scope
-- Bypasses of `tools/dbq.py`: write access, multiple statements, forbidden functions, blocked columns, filter
+- Bypasses of `shared/dbq.py`: write access, multiple statements, forbidden functions, blocked columns, filter
   injection, the cost limit, PII masking.
 - Skill instructions that would lead an agent to leak PII or credentials, or to act on instructions found inside
   database rows.

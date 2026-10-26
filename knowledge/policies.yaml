@@ -1,4 +1,4 @@
-# Enforced by tools/dbq.py on every query. Filled in by the audit (data-profiler, table-interpreter,
+# Enforced by shared/dbq.py on every query. Filled in by the audit (data-profiler, table-interpreter,
 # quality-auditor); changed afterwards only through knowledge-promotion or human-review.
 blocked_columns: []
 pii_columns: []
