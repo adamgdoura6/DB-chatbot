@@ -8,7 +8,7 @@ SELECT n.nspname || '.' || c.relname AS table_fqn,
          || '|' ||
          coalesce((SELECT string_agg(pg_get_constraintdef(con.oid), ',' ORDER BY con.conname)
                    FROM pg_constraint con WHERE con.conrelid = c.oid), '')
-       ) AS structure_hash
+       ) AS structure_fingerprint
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND NOT c.relispartition
   AND n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg\_%'

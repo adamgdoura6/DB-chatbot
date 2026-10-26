@@ -1,7 +1,7 @@
 # Talk to your database
 
 Use the AI agent you already have (Claude Code, Codex, GitHub Copilot, Cursor) as a chatbot for your database.
-It answers from the audit report in [`../knowledge/`](../knowledge) and queries the database read-only through
+It answers from the audit report in [`../knowledge/<db>/`](../knowledge) and queries the database read-only through
 [`../shared/dbq.py`](../shared/dbq.py).
 
 **Needs:** a finished audit (see [`../audit-your-database/`](../audit-your-database)). The agent checks this
@@ -45,7 +45,7 @@ Other things to say:
 
 ## Let it learn
 
-Feedback becomes proposals in `../learning/proposals/`. They reach the knowledge only after passing checks on
+Feedback becomes proposals in `../learning/<db>/proposals/`. They reach the knowledge only after passing checks on
 your data and a regression test. Run the loop nightly (cron or CI):
 
 ```bash

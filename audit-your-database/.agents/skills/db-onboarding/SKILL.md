@@ -11,14 +11,21 @@ have clear inputs and outputs on disk (see the knowledge-store skill), so the au
 output already exists for this run, skip it.
 
 ## Before starting
+0. Which database: `python ../shared/dbq.py --active`. Say its name to the user before you start; every
+   `../knowledge/<db>/` below is that database's folder.
 1. Check the connection: `python ../shared/dbq.py "SELECT current_database(), current_user, version()"`.
    If that fails, stop and ask the user to run `python connect.py` in their own terminal (it asks for the
    password, so do not run it for them).
 2. Check that the connection really is read-only:
    `python ../shared/dbq.py "SELECT has_database_privilege(current_user, current_database(), 'CREATE') AS can_create"`.
    If the role can write, warn the user and recommend a dedicated read-only role. Continue only if they agree.
-3. Ask the user for the scope (schemas to include) if not given. Default: all non-system schemas.
-4. Full audit or incremental: if `../knowledge/_raw/catalog/hashes.json` exists, re-run only the `hashes.sql`
+3. Record which database this audit is of: `python connect.py --bind`. It succeeds for a fresh audit or the
+   same database. If it exits with 5, `../knowledge/<db>/` already holds the audit of another database (or of
+   an unrecorded one): stop. Tell the user to save the new database under its own name (`python connect.py`
+   in their own terminal), or, if it is the same database at a new address, to run `python connect.py --bind`
+   there. Never work around it, and never move or delete a `knowledge/` folder to make room.
+4. Ask the user for the scope (schemas to include) if not given. Default: all non-system schemas.
+5. Full audit or incremental: if `../knowledge/<db>/_raw/catalog/hashes.json` exists, re-run only the `hashes.sql`
    query from catalog-crawler and compare. Tables with a new or changed hash are the **work set**. Unchanged
    tables keep their cards. If nothing changed, say so and stop.
 
@@ -45,7 +52,6 @@ after another.
 1. Make sure every table in the catalog has a card. If a table has none, write a minimal card from the catalog
    with `confidence: 0.2`.
 2. Check that `policies.yaml` is valid YAML: `python ../shared/dbq.py --check "SELECT 1"` must succeed.
-3. Commit: `git add ../knowledge && git commit -m "knowledge: audit <N> tables (<full|incremental>)"`.
-   If this is not a git repository, run `git init` first (ask the user once).
+3. Do not commit: `knowledge/` and `learning/` are git-ignored, so customer data never enters the repository.
 4. Report to the user: number of tables, domains, joins (declared/inferred), glossary terms, verified queries,
    open questions, and the 3-5 most important gotchas found. Then show the open questions (human-review).

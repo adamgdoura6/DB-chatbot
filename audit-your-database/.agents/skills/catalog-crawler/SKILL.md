@@ -1,6 +1,6 @@
 ---
 name: catalog-crawler
-description: Step 1 of the database audit. Reads the Postgres system catalog (tables, columns, types, keys, foreign keys, indexes, enums, views, RLS policies, triggers, extensions, structure hashes) into ../knowledge/_raw/catalog/. Use at onboarding or when the schema may have changed.
+description: Step 1 of the database audit. Reads the Postgres system catalog (tables, columns, types, keys, foreign keys, indexes, enums, views, RLS policies, triggers, extensions, structure hashes) into ../knowledge/<db>/_raw/catalog/. Use at onboarding or when the schema may have changed.
 ---
 
 # Catalog crawler
@@ -13,13 +13,13 @@ Do not write your own catalog queries unless a file fails.
 From the repository root, run each query and save its JSON output:
 
 ```bash
-mkdir -p ../knowledge/_raw/catalog
+mkdir -p ../knowledge/<db>/_raw/catalog
 for q in tables columns constraints indexes extras hashes; do
   python ../shared/dbq.py --json --max-rows 20000 --timeout-ms 60000 \
-    --file .agents/skills/catalog-crawler/queries/$q.sql > ../knowledge/_raw/catalog/$q.json
+    --file .agents/skills/catalog-crawler/queries/$q.sql > ../knowledge/<db>/_raw/catalog/$q.json
 done
 python ../shared/dbq.py --json --max-rows 300 --file .agents/skills/catalog-crawler/queries/query-log.sql \
-  > ../knowledge/_raw/catalog/query-log.json || echo '{"rows": [], "note": "pg_stat_statements unavailable"}' > ../knowledge/_raw/catalog/query-log.json
+  > ../knowledge/<db>/_raw/catalog/query-log.json || echo '{"rows": [], "note": "pg_stat_statements unavailable"}' > ../knowledge/<db>/_raw/catalog/query-log.json
 ```
 
 On Windows PowerShell, run the same `python ../shared/dbq.py ...` commands one by one, with `> file` redirects.
@@ -28,7 +28,7 @@ On Windows PowerShell, run the same `python ../shared/dbq.py ...` commands one b
 - `tables.json` has `"truncated": false`. If it is truncated, the database is very large: crawl schema by schema
   by adding `AND n.nspname = '<schema>'` to the queries.
 - If the user limited the audit to certain schemas, drop other schemas' rows from every file now, and note the
-  scope in `../knowledge/overview.md`.
+  scope in `../knowledge/<db>/overview.md`.
 - Count the tables, views and foreign keys and report them in one line, e.g. `Crawled 87 tables, 12 views, 64 FKs`.
 
 ## What the files contain

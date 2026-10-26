@@ -1,15 +1,15 @@
 ---
 name: feedback-capture
-description: Records user feedback on database answers - thumbs up/down, written corrections ("revenue should exclude refunds"), corrected SQL, answers to clarifying questions, and implicit signals (immediate rephrasing, export/copy, abandonment) - into ../learning/feedback.jsonl, linked to the trace. Use whenever the user reacts to an answer from db-answer.
+description: Records user feedback on database answers - thumbs up/down, written corrections ("revenue should exclude refunds"), corrected SQL, answers to clarifying questions, and implicit signals (immediate rephrasing, export/copy, abandonment) - into ../learning/<db>/feedback.jsonl, linked to the trace. Use whenever the user reacts to an answer from db-answer.
 ---
 
 # Feedback capture
 
 Every signal is gold for the learner, but **a correction is a claim, not a fact**. Record it, and never apply it
-to `../knowledge/` directly: knowledge-promotion decides.
+to `../knowledge/<db>/` directly: knowledge-promotion decides.
 
 ## What to record
-Append one JSON line per signal to `../learning/feedback.jsonl`:
+Append one JSON line per signal to `../learning/<db>/feedback.jsonl`:
 ```json
 {"trace_id": "t-...", "ts": "<iso>", "user": "<name or id if known>", "role": "user|analyst|data_owner|admin",
  "rating": 1, "correction": null, "corrected_sql": null, "clarification_answer": null, "implicit": null}

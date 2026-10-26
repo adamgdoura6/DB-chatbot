@@ -1,13 +1,15 @@
 # Audit your database: agent instructions
 
 This folder connects to the customer database and audits it. The result, the audit report, is the knowledge
-store in `../knowledge/`. `../talk-to-your-database/` reads it to answer questions.
+store in `../knowledge/<db>/`. `../talk-to-your-database/` reads it to answer questions.
 
 The rules in `../AGENTS.md` apply here; read them first. Run every command from this folder.
 
 ## Paths
+- active database: `python ../shared/dbq.py --active` prints its name. `<db>` in every path below and in the
+  skills stands for that name (e.g. `../knowledge/<db>/` = `../knowledge/shop/`).
 - database: `python ../shared/dbq.py "<sql>"` (the only access path)
-- audit report: `../knowledge/` (format: `../shared/skills/knowledge-store/SKILL.md`)
+- audit report: `../knowledge/<db>/` (format: `../shared/skills/knowledge-store/SKILL.md`)
 - skills: `.agents/skills/<name>/SKILL.md`. If your agent does not load skills automatically, open the right
   `SKILL.md` and follow it.
 
@@ -17,6 +19,9 @@ The rules in `../AGENTS.md` apply here; read them first. Run every command from 
 |---|---|
 | connect a database / change the connection | ask the user to run `python connect.py` **in their own terminal** (it asks for the password). Afterwards, run `python connect.py --check` |
 | "is it connected?" | `python connect.py --check` |
+| which databases are saved / which one is active | `python connect.py --databases` |
+| switch to another saved database | `python connect.py --use <name>` (only when the user asks; say which one is active afterwards) |
+| audit a second / another database | the user saves it under its own name: `python connect.py` **in their own terminal**. It becomes the active database with its own `../knowledge/<name>/`; then run db-onboarding |
 | which databases are supported | `python connect.py --list`, details in `providers/README.md` |
 | audit / onboard / "learn my database" / re-audit after schema changes | `.agents/skills/db-onboarding/SKILL.md` |
 | schema changed / refresh stats | `.agents/skills/drift-monitor/SKILL.md` |

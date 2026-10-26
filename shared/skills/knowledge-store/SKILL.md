@@ -1,21 +1,24 @@
 ---
 name: knowledge-store
-description: Format and rules of the database knowledge store in ../knowledge/ (overview, domain cards, table and column cards, join graph, glossary and metrics, value index, verified queries, policies, open questions). Read this before reading or writing anything under ../knowledge/.
+description: Format and rules of the database knowledge store in ../knowledge/<db>/ (overview, domain cards, table and column cards, join graph, glossary and metrics, value index, verified queries, policies, open questions). Read this before reading or writing anything under ../knowledge/<db>/.
 ---
 
 # Knowledge store
 
 The audit's output is the product. Everything an agent learns about the customer database lives as plain
-files under `../knowledge/`, versioned with git. Every fact records **where it came from** and **how sure we are**.
+files under `../knowledge/<db>/`, versioned with git. Every fact records **where it came from** and **how sure we are**.
 
 ## Layout
 
 `knowledge/` and `learning/` sit at the repository root, shared by `audit-your-database/` (which writes the
 audit) and `talk-to-your-database/` (which reads it and learns). Every path in the skills is written from inside
-one of those two folders, hence the `../`.
+one of those two folders, hence the `../`. Each database has its own subfolder in both: `<db>` is the active
+database's name (`python ../shared/dbq.py --active`). Never read or write another database's folder.
 
 ```
-../knowledge/
+../knowledge/<db>/
+  database.json                  which database this is the audit of (host, port, name); dbq.py refuses others.
+                                 Written by `connect.py --bind`, never by hand
   overview.md                    L0  one page: what the business is, list of domains, cross-cutting caveats
   domains/<domain>.md            L1  tables in the domain, key entities, common questions
   tables/<schema>.<table>.yaml   L2+L3  table card with column cards
@@ -29,7 +32,7 @@ one of those two folders, hence the `../`.
   _raw/catalog/*.json            catalog snapshot: tables, columns, constraints, indexes, extensions, hashes
   _raw/profiles/<schema>.<table>.json   stats + masked samples (data-profiler)
   _raw/relationships.json        candidate joins with overlap results (relationship-analyst)
-../learning/
+../learning/<db>/
   traces/<YYYY-MM-DD>.jsonl      one line per answered question
   feedback.jsonl                 thumbs, corrections, implicit signals
   proposals/<id>.yaml            learner output, waiting for promotion
@@ -177,9 +180,9 @@ max_plan_cost: 5000000
   answered_by: null
 ```
 
-## Versioning rules
-- Each audit, each promoted batch of learnings, and each human answer is **one git commit** with a clear
-  message (e.g. `knowledge: audit 42 tables`, `knowledge: promote 3 proposals (p-12, p-13, p-15)`).
-  Rolling back means reverting that commit.
-- Keep files deterministic: sort keys and lists by name, so diffs show real changes.
-- One customer database per repository or branch. Learnings never cross customers.
+## Storage rules
+- `knowledge/` and `learning/` are **git-ignored**: customer data never enters the repository, and nothing here
+  is committed. There is no history; a learned change is undone from the `previous:` values its proposal records
+  (knowledge-promotion).
+- Keep files deterministic: sort keys and lists by name, so changes are easy to compare.
+- One folder per database. Learnings never cross databases.

@@ -1,6 +1,6 @@
 ---
 name: failure-learner
-description: Offline learner (run nightly/hourly, never during a user's question). Reviews failed, corrected and positively rated traces, diagnoses the root cause of each failure, and writes concrete proposed knowledge changes with evidence to ../learning/proposals/. Never edits ../knowledge/ directly.
+description: Offline learner (run nightly/hourly, never during a user's question). Reviews failed, corrected and positively rated traces, diagnoses the root cause of each failure, and writes concrete proposed knowledge changes with evidence to ../learning/<db>/proposals/. Never edits ../knowledge/<db>/ directly.
 ---
 
 # Failure learner
@@ -9,8 +9,8 @@ The system learns by improving its **knowledge**, not by retraining models. Each
 specific, testable proposed fix.
 
 ## 1. Collect cases
-From `../learning/traces/*.jsonl` and `../learning/feedback.jsonl`, skip traces already cited as `evidence` in any
-`../learning/proposals/*.yaml`. Then collect:
+From `../learning/<db>/traces/*.jsonl` and `../learning/<db>/feedback.jsonl`, skip traces already cited as `evidence` in any
+`../learning/<db>/proposals/*.yaml`. Then collect:
 - **Failures:** `rating: -1`, any correction or corrected SQL, `implicit: rephrased`, data questions with no
   `final_sql`, `retries >= 3`, or guard rejections that ended the answer.
 - **Successes:** `rating: 1` (or `implicit: used`) with a `final_sql`. These become candidate verified queries.
@@ -35,7 +35,7 @@ Prefer the **smallest** change that would have produced the right answer. If the
 wrong given the data, still record it, but say so in `explanation`.
 
 ## 3. Write proposals
-One file per change, `../learning/proposals/p-<yyyymmdd>-<n>.yaml`:
+One file per change, `../learning/<db>/proposals/p-<yyyymmdd>-<n>.yaml`:
 ```yaml
 id: p-20261008-3
 status: pending            # pending | promoted | rejected | needs_review
@@ -61,5 +61,5 @@ Other change shapes use the fields they need: `table`, `column`, `meaning`, `uni
 Each success becomes an `add_verified_query` proposal, with its question and final SQL, and its weight.
 
 ## 4. Report
-Give counts per root cause. Also add them to `../learning/learner-stats.jsonl` as
+Give counts per root cause. Also add them to `../learning/<db>/learner-stats.jsonl` as
 `{"date": ..., "counts": {...}}`. Aggregated root-cause counts show which prompts and skills need improving.

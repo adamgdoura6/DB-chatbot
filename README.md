@@ -43,7 +43,7 @@ flowchart LR
     A7 --> A8[knowledge-verifier]
     A8 --> A9[human-review]
   end
-  subgraph Store["2 · knowledge/ (git-versioned)"]
+  subgraph Store["2 · knowledge/&lt;db&gt;/ (local, git-ignored)"]
     S[overview · domain cards · table & column cards<br/>join graph · glossary/metrics · value index<br/>verified queries · policies]
   end
   subgraph Ask["3 · Answering"]
@@ -63,23 +63,32 @@ flowchart LR
 - **Every fact carries its source and confidence.** The sources are `fk`, `inferred`, `llm_guess`, `verified`
   and `human_confirmed`. The bot tells you when an answer relies on a guess.
 - **It learns without retraining.** Failures are diagnosed and turned into proposed knowledge changes. The
-  changes are checked against real data and regression-tested on an eval set, and only then committed. It works
+  changes are checked against real data and regression-tested on an eval set, and only then applied. It works
   like CI/CD, but for knowledge.
 
 ## Two directions, two folders
 
 | folder | what it does |
 |---|---|
-| [**`audit-your-database/`**](audit-your-database) | connect your database (Supabase, AWS RDS/Aurora, any Postgres; more planned) and run the audit. Output: the audit report in `knowledge/` |
+| [**`audit-your-database/`**](audit-your-database) | connect your database (Supabase, AWS RDS/Aurora, any Postgres; more planned) and run the audit. Output: the audit report in `knowledge/<db>/` |
 | [**`talk-to-your-database/`**](talk-to-your-database) | connect the agent you already use (Claude Code, Codex, Copilot, Cursor) to the audit report and the database, and ask questions. It learns from your feedback |
 
 ## Quickstart
 
-**1. Get the repo** (use a **private** copy per database; see [Privacy](#privacy)).
+**1. Get the repo** (keep it **private**; see [Privacy](#privacy)). One copy can hold several databases: each
+is saved under a name and gets its own `knowledge/<name>/` and `learning/<name>/`. The bot works on one at a
+time, the active one.
 ```bash
 git clone https://github.com/adamgdoura6/DB-chatbot.git my-company-db-chat
 cd my-company-db-chat
-pip install -r requirements.txt
+uv sync                     # creates .venv with the dependencies
+```
+
+**The short way:** one command does steps 2 and 3. It opens your provider's connection page, checks the
+login, then starts the agent you pick (Claude Code, Codex, Copilot, or the web app). The agent starts with the
+audit if there is none yet.
+```bash
+uv run start.py
 ```
 
 **2. Connect and audit** ([details](audit-your-database/README.md)).
@@ -113,13 +122,15 @@ cd talk-to-your-database && claude -p "Follow .agents/skills/db-learn/SKILL.md" 
 ```
 AGENTS.md                         router for every agent: which folder, non-negotiable rules
 audit-your-database/
-  connect.py                      provider picker + connection and read-only checks, writes .env
+  connect.py                      provider picker + connection and read-only checks, saves a named connection
+                                  to .env; --databases, --use NAME, --bind, --migrate NAME
   providers/                      per-provider guides, readonly-role.sql
   AGENTS.md, .agents/skills/      the audit skills
 talk-to-your-database/
   AGENTS.md, .agents/skills/      the answering and learning skills
-knowledge/                        the audit report (written by the audit, read by the chatbot; policies.yaml enforced by dbq)
-learning/                         traces, feedback, proposals, eval reports
+knowledge/<db>/                   the audit report of each database (written by the audit, read by the chatbot;
+                                  policies.yaml enforced by dbq, database.json says which database it describes)
+learning/<db>/                    traces, feedback, proposals, eval reports of each database
 shared/
   dbq.py                          the only database access path (guarded, read-only)
   skills/                         knowledge-store (file formats), human-review
@@ -132,7 +143,7 @@ db-chatbot-architecture.md        the design
 |---|---|
 | `audit-your-database` | `db-onboarding` (entry point), `catalog-crawler`, `data-profiler`, `relationship-analyst`, `domain-clusterer`, `table-interpreter`, `quality-auditor`, `knowledge-synthesizer`, `knowledge-verifier`, `drift-monitor` |
 | `talk-to-your-database` | `db-answer` (entry point), `knowledge-retrieval`, `sql-review`, `feedback-capture`, `db-learn`, `failure-learner`, `knowledge-promotion`, `db-eval` |
-| `shared` | `knowledge-store` (file formats, provenance, versioning rules), `human-review` |
+| `shared` | `knowledge-store` (file formats, provenance, storage rules), `human-review` |
 
 ## Safety model
 
@@ -150,8 +161,8 @@ Safety is enforced in code, in `shared/dbq.py`, not in prompts:
 
 ## Privacy
 
-- `knowledge/` and `learning/` will contain a description of **your** schema and business logic, plus masked
-  samples. Keep each database's copy in a **private** repository. Do not open a pull request with them.
+- `knowledge/<db>/` and `learning/<db>/` will contain a description of **your** schemas and business logic, plus
+  masked samples. Keep your copy in a **private** repository. Do not open a pull request with them.
 - PII is masked before reaching the model, but the schema and aggregate results do reach your agent's model
   provider. Check that this matches your data-processing agreements. For GDPR, use EU-hosted model endpoints if
   needed.

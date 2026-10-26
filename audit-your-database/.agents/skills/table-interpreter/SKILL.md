@@ -12,13 +12,13 @@ like this, not because of SQL syntax. Be precise, ground every claim in evidence
 by domain. Interpret a whole domain together: a table makes more sense next to its neighbours.
 
 ## Input for domain `<D>`
-- The table list from `../knowledge/domains/<D>.md`.
+- The table list from `../knowledge/<db>/domains/<D>.md`.
 - For each table, from `_raw/catalog/*.json`: columns, types, keys, comments, enums, check constraints, view
   definition.
 - From `_raw/profiles/<table>.json`: stats, top values, freshness, masked samples.
-- The edges touching these tables in `../knowledge/joins.yaml`, and the summaries of linked tables in other
+- The edges touching these tables in `../knowledge/<db>/joins.yaml`, and the summaries of linked tables in other
   domains (if their cards exist).
-- The flags for these tables in `../knowledge/quality.yaml` (if quality-auditor already ran).
+- The flags for these tables in `../knowledge/<db>/quality.yaml` (if quality-auditor already ran).
 
 You may run small extra queries with `../shared/dbq.py` to settle a question, e.g. to check
 `SELECT status, count(*), min(amount), max(amount) FROM orders GROUP BY 1`. Keep them cheap (LIMIT,
@@ -47,15 +47,15 @@ aggregates, `--timeout-ms 15000`).
 
 ## Uncertainty → open questions
 When the evidence cannot settle something that matters, give your best guess with low confidence **and** add a
-question to `../knowledge/open-questions.yaml`. Typical cases: cents or euros, what a code means, which of two
+question to `../knowledge/<db>/open-questions.yaml`. Typical cases: cents or euros, what a code means, which of two
 tables is current, whether test data is mixed in. Phrase each question so a data owner can answer it in
 seconds, and include your current guess.
 
 ## Output
-- One file per table, `../knowledge/tables/<schema>.<table>.yaml`, in exactly the format from the knowledge-store
+- One file per table, `../knowledge/<db>/tables/<schema>.<table>.yaml`, in exactly the format from the knowledge-store
   skill.
-- Mandatory filters appended to `../knowledge/policies.yaml` under `mandatory_filters`.
-- New entries in `../knowledge/open-questions.yaml`. Ids: `oq-<domain>-<n>`, so parallel runs never collide.
+- Mandatory filters appended to `../knowledge/<db>/policies.yaml` under `mandatory_filters`.
+- New entries in `../knowledge/<db>/open-questions.yaml`. Ids: `oq-<domain>-<n>`, so parallel runs never collide.
 
 When running as a subagent, return a short summary only: tables written, number of open questions, and the
 biggest gotchas. The files are the real output.

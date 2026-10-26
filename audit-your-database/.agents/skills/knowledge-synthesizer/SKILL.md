@@ -5,7 +5,7 @@ description: Step 7 of the database audit. Writes the top layers of the knowledg
 
 # Knowledge synthesizer
 
-## 1. Domain cards: `../knowledge/domains/<domain>.md`
+## 1. Domain cards: `../knowledge/<db>/domains/<domain>.md`
 For each domain, read its table cards and write:
 
 ```markdown
@@ -28,13 +28,13 @@ Common questions:
 Watch out: amounts are EUR cents; revenue = status 2 minus refunds; exclude internal customers.
 ```
 
-## 2. Overview: `../knowledge/overview.md` (L0, at most one page)
+## 2. Overview: `../knowledge/<db>/overview.md` (L0, at most one page)
 - What the business is and does, as far as the data shows.
 - The list of domains, each with one line.
 - Cross-cutting caveats: currencies, time zones, multi-tenancy (`org_id`), test data, legacy areas.
 - The audit scope: schemas included and date of the audit.
 
-## 3. Glossary and metrics: `../knowledge/glossary.yaml`
+## 3. Glossary and metrics: `../knowledge/<db>/glossary.yaml`
 Define the business terms users will say, mapped to exact SQL. Examples: revenue, order, customer, active user,
 churn, MRR, AOV, conversion, refund rate.
 

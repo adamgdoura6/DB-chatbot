@@ -7,7 +7,7 @@ description: Keeps the knowledge fresh as the database changes - detects schema 
 
 ## 1. Schema changes (nightly)
 1. Run `.agents/skills/catalog-crawler/queries/hashes.sql` with `../shared/dbq.py --json --max-rows 20000`.
-2. Compare it with `../knowledge/_raw/catalog/hashes.json`. The differences fall into:
+2. Compare it with `../knowledge/<db>/_raw/catalog/hashes.json`. The differences fall into:
    - **added** tables: audit them, and put them into a domain;
    - **removed** tables: delete their cards, edges, values and glossary references; mark verified queries that
      use them as `broken: true`;
@@ -33,8 +33,9 @@ description: Keeps the knowledge fresh as the database changes - detects schema 
 
 ## 4. Mine query logs (weekly)
 Re-run `query-log.sql`. Join patterns or filters not yet in `joins.yaml` or the glossary become proposals in
-`../learning/proposals/`, with `root_cause: not_retrieved`. They go through knowledge-promotion like any other
+`../learning/<db>/proposals/`, with `root_cause: not_retrieved`. They go through knowledge-promotion like any other
 learning.
 
-## Commit
-`git commit -am "knowledge: drift check <date> (+A ~C -R tables, N queries re-verified, B broken)"`.
+## Report
+Tell the user: drift check <date>: +A ~C -R tables, N queries re-verified, B broken. Do not commit (`knowledge/`
+is git-ignored).

@@ -38,7 +38,7 @@ top-N, joins across 2-3 tables, and a metric. For each one:
 2. Run it: `python ../shared/dbq.py --json --max-rows 200 "<sql>"`.
 3. Keep it only if it runs, returns rows, and the result is plausible: no column NULL in every row, no
    absurdly large totals from fan-out.
-4. Append it to `../knowledge/verified-queries.yaml` with `trust: verified`, `last_verified: <today>` and
+4. Append it to `../knowledge/<db>/verified-queries.yaml` with `trust: verified`, `last_verified: <today>` and
    `expected_shape` (e.g. `"12 rows, columns month, revenue_eur"`).
 
 If a question fails because the knowledge is wrong, fix the card, not just the query, and record what changed.

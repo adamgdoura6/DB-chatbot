@@ -1,6 +1,6 @@
 ---
 name: relationship-analyst
-description: Step 3 of the database audit. Builds the join graph from declared foreign keys plus undeclared relationships (naming conventions, query logs, polymorphic type/id pairs), verifies every inferred join with a value-overlap SQL check, and records cardinality and confidence in ../knowledge/joins.yaml.
+description: Step 3 of the database audit. Builds the join graph from declared foreign keys plus undeclared relationships (naming conventions, query logs, polymorphic type/id pairs), verifies every inferred join with a value-overlap SQL check, and records cardinality and confidence in ../knowledge/<db>/joins.yaml.
 ---
 
 # Relationship analyst
@@ -9,7 +9,7 @@ Real databases are full of joins nobody declared (`user_id` with no FK). Find th
 have not verified on data.**
 
 ## 1. Declared foreign keys
-From `../knowledge/_raw/catalog/constraints.json`, rows with `type = 'f'`. Each becomes an edge with
+From `../knowledge/<db>/_raw/catalog/constraints.json`, rows with `type = 'f'`. Each becomes an edge with
 `source: fk, confidence: 1.0`.
 
 ## 2. Candidate undeclared joins
@@ -43,7 +43,7 @@ If the column types differ, cast both sides with `::text`. Use `--timeout-ms 200
 - overlap = hit / total
 - Accept only if overlap >= 0.9. Then set confidence = overlap × base, where the base is 0.95 for a query log,
   0.9 for naming or polymorphic, and 0.8 for judgement.
-- Rejected candidates go to `../knowledge/_raw/relationships.json` with their overlap, for the record.
+- Rejected candidates go to `../knowledge/<db>/_raw/relationships.json` with their overlap, for the record.
 - 0.9 <= overlap < 1.0 means orphan rows exist. Tell the quality-auditor (record the percentage).
 
 ## 4. Cardinality (left:right)
@@ -61,5 +61,5 @@ the left side.
 They mean an N:M between the two targets. Note them in both table cards.
 
 ## Output
-`../knowledge/joins.yaml`, sorted by `left`, in the format from the knowledge-store skill. Report the result in one
+`../knowledge/<db>/joins.yaml`, sorted by `left`, in the format from the knowledge-store skill. Report the result in one
 line, e.g. `64 declared, 23 inferred (verified), 7 rejected, 3 junction tables`.

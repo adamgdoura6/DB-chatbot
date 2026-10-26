@@ -5,8 +5,12 @@
 -- 1. Change the password.
 -- 2. Repeat the "per schema" block for every schema the bot may see (default: public only).
 
-CREATE ROLE ai_reader WITH LOGIN PASSWORD 'change-me-to-a-long-random-password'
-  NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+-- Creates the login, or only resets its password if it exists already: safe to run again.
+DO $$ BEGIN
+  CREATE ROLE ai_reader WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+ALTER ROLE ai_reader WITH LOGIN PASSWORD 'change-me-to-a-long-random-password';
 
 -- Belt and braces: every session of this role is read-only, with a server-side timeout.
 ALTER ROLE ai_reader SET default_transaction_read_only = on;

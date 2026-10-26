@@ -16,7 +16,7 @@ script, so contributions look a bit different from a typical code project.
 - One folder per skill, on the side that uses it: `audit-your-database/.agents/skills/<name>/SKILL.md`,
   `talk-to-your-database/.agents/skills/<name>/SKILL.md`, or `shared/skills/<name>/SKILL.md` if both sides do.
   Follow the [Agent Skills](https://agentskills.io) format. Write paths as seen from inside the folder
-  (`../knowledge/`, `../shared/dbq.py`).
+  (`../knowledge/<db>/`, `../shared/dbq.py`).
   - Frontmatter `name` matches the folder name (lowercase letters, digits and hyphens).
   - `description` says **what the skill does and when to use it**, in at most 1024 characters.
 - Keep each skill to one job, with clear inputs and outputs on disk (see `knowledge-store`).

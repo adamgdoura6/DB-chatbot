@@ -1,5 +1,5 @@
 -- One row per column, with type, nullability, default, comment and enum labels.
-SELECT n.nspname AS schema_name, c.relname AS table_name, a.attnum AS position, a.attname AS name,
+SELECT n.nspname AS schema_name, c.relname AS table_name, a.attnum AS position, a.attname AS column_name,
        format_type(a.atttypid, a.atttypmod) AS data_type,
        NOT a.attnotnull AS nullable,
        pg_get_expr(d.adbin, d.adrelid) AS default_value,

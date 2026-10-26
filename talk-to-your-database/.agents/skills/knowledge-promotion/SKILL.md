@@ -1,12 +1,12 @@
 ---
 name: knowledge-promotion
-description: Promotion gates for learned knowledge (CI/CD for knowledge). Applies pending proposals from ../learning/proposals/ only if they don't contradict confirmed facts, pass verification on real data, and don't lower accuracy on the eval set; commits promoted changes as one revertible git commit. Use after failure-learner, or when an admin approves a proposal.
+description: Promotion gates for learned knowledge (CI/CD for knowledge). Applies pending proposals from ../learning/<db>/proposals/ only if they don't contradict confirmed facts, pass verification on real data, and don't lower accuracy on the eval set; applies what passes and records how to undo each change. Use after failure-learner, or when an admin approves a proposal.
 ---
 
 # Knowledge promotion
 
 A system that learns from feedback can also learn mistakes, or be poisoned on purpose. Nothing enters
-`../knowledge/` without passing these gates.
+`../knowledge/<db>/` without passing these gates.
 
 ## Gate 0: group and weigh
 Group pending proposals that make the same change, and add up their `weight` (user 1, analyst 2,
@@ -32,24 +32,26 @@ has `trust: confirmed`, and it disagrees with it?
 Failure → `status: rejected`, `status_reason: verification failed: ...`.
 
 ## Gate 3: apply on a candidate, then run regressions
-1. Create a branch: `git switch -c promote-<date>`.
-2. Apply all proposals that passed gates 1-2 to the files in `../knowledge/`. The new facts get their trust level:
+There is no git history for `knowledge/` (it is git-ignored). Each proposal file records exactly which file and
+fact it changes; that record is how a change is undone.
+1. Write down, per proposal, the value each changed fact had before (in the proposal file, as `previous:`).
+2. Apply all proposals that passed gates 1-2 to the files in `../knowledge/<db>/`. The new facts get their trust level:
    - `verified` if gate 2 ran SQL;
    - `confirmed` if the weight is >= 4 or an admin approved it;
    - `proposed` otherwise.
 3. Run the db-eval skill on the candidate (sample of 20 verified queries, or all if fewer). Compare with the last
-   accuracy in `../learning/eval/`.
-4. If accuracy **dropped**: find the proposal responsible by re-running the eval with half of them reverted,
-   and repeat on the half that still fails. Reject the culprits (`status_reason: regression`). Keep the rest.
+   accuracy in `../learning/<db>/eval/`.
+4. If accuracy **dropped**: find the proposal responsible by re-running the eval with half of them undone
+   (restore their `previous:` values), and repeat on the half that still fails. Undo and reject the culprits
+   (`status_reason: regression`). Keep the rest.
 
-## Commit
-- Merge to the main branch as one commit:
-  `knowledge: promote N proposals (p-..., p-...) - eval 87% -> 89%`.
-- Update each proposal file: `status: promoted`, `promoted_in: <commit sha>`.
-- **Rollback** of a bad learning means `git revert <sha>`. Then mark the affected proposals `rejected` with the
-  reason.
+## Finish
+- Update each kept proposal file: `status: promoted`, `promoted_at: <timestamp>`.
+- Tell the user: promoted N proposals (p-..., p-...), eval 87% -> 89%. Do not commit.
+- **Rollback** of a bad learning: restore the `previous:` values from its proposal file, then mark it `rejected`
+  with the reason.
 
 ## Rules
 - Every fixed failure becomes a test case: a promoted change for trace X also adds or keeps a verified query
   for X's question (if it has SQL).
-- Never let one customer's learnings into another customer's knowledge (separate repo or branch per customer).
+- Never let one customer's learnings into another customer's knowledge (each database has its own `knowledge/<db>/` and `learning/<db>/`).

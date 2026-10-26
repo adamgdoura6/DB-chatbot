@@ -1,5 +1,5 @@
 -- Primary keys (p), foreign keys (f), unique (u) and check (c) constraints.
-SELECT n.nspname AS schema_name, c.relname AS table_name, con.conname AS name, con.contype AS type,
+SELECT n.nspname AS schema_name, c.relname AS table_name, con.conname AS constraint_name, con.contype AS type,
        (SELECT string_agg(a.attname, ',' ORDER BY k.ord) FROM unnest(con.conkey) WITH ORDINALITY k(attnum, ord)
           JOIN pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = k.attnum) AS columns,
        rn.nspname || '.' || rc.relname AS ref_table,

@@ -2,6 +2,13 @@
 
 Supabase is PostgreSQL, so it is fully supported.
 
+**The easy way:** `uv run start.py` (or `python connect.py`) does all of this for you. It opens Supabase's
+access-token page; paste a token and pick your project. Through the Supabase Management API it then runs the
+SQL below with a generated password, builds the Session pooler connection string for `ai_reader`, and tests
+it. The token is used only during this setup and never saved; the agent only ever gets the read-only login.
+The token must have write access (not read-only), and your account must be an Owner or Administrator of the
+project's organization. The steps below are what happens under the hood.
+
 ## 1. Create a read-only role
 Do **not** use the `postgres` password or the `service_role` key. Both can write, and `service_role` bypasses
 Row Level Security.
@@ -26,7 +33,7 @@ Row Level Security.
    unless you need them.
 
 ## 2. Get the connection string
-Dashboard → **Connect** → **Session pooler** (works over IPv4; the direct connection is IPv6-only unless you
+Dashboard → **Connect** → **Direct** → **Session pooler** (works over IPv4; the direct connection is IPv6-only unless you
 have the IPv4 add-on). It looks like:
 
 ```

@@ -1,20 +1,22 @@
 # Audit your database
 
 Connect your database, then let an agent audit it: what every table holds, how tables connect, where each kind
-of information lives, and which business rules apply. The audit report lands in [`../knowledge/`](../knowledge)
+of information lives, and which business rules apply. The audit report lands in [`../knowledge/<db>/`](../knowledge)
 and is what [`../talk-to-your-database/`](../talk-to-your-database) uses to answer questions.
 
 ## 1. Connect
 
 ```bash
-pip install -r requirements.txt     # from the repository root
+uv sync                             # from the repository root, then activate .venv
 cd audit-your-database
 python connect.py
 ```
 
 `connect.py` asks where your database lives, takes the connection (the password is never echoed), tests it
-through `shared/dbq.py`, warns if the login can write, and saves it to the git-ignored `.env` at the repository
-root.
+through `shared/dbq.py`, warns if the login can write, asks for a name, and saves it to the git-ignored `.env` at
+the repository root. The name is the folder of its audit (`knowledge/<name>/`). Run it again to add another
+database; `python connect.py --databases` lists them and `python connect.py --use <name>` switches.
+A copy audited before databases had names: `python connect.py --migrate <name>` moves it into its folder.
 
 | provider | status | guide |
 |---|---|---|
@@ -39,7 +41,7 @@ Open this folder in your agent and say **"Audit my database"**.
 | GitHub Copilot (VS Code), Cursor | open the **repository root** as the workspace, then: *"Audit my database"* |
 | any other | point it to [`AGENTS.md`](AGENTS.md) |
 
-`--add-dir ..` lets the agent write the report into `../knowledge/`, outside this folder.
+`--add-dir ..` lets the agent write the report into `../knowledge/<db>/`, outside this folder.
 
 The audit runs these skills (in [`.agents/skills/`](.agents/skills)):
 
@@ -61,7 +63,7 @@ The learning loop in `talk-to-your-database` also runs the drift check every nig
 ## What's in the report
 
 ```
-../knowledge/
+../knowledge/<db>/
   overview.md            one page: the business, the domains, cross-cutting caveats
   domains/<domain>.md    tables per domain, key entities, common questions
   tables/<table>.yaml    table + column cards: meaning, units, value codes, gotchas, confidence

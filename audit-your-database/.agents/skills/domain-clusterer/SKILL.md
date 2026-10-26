@@ -8,7 +8,7 @@ description: Step 4 of the database audit. Groups tables into business domains (
 Group tables by **how they connect**, not by how they are named. Use naming only to break ties.
 
 ## Procedure
-1. Build the graph: tables are nodes, and edges come from `../knowledge/joins.yaml`. Weight each edge by its
+1. Build the graph: tables are nodes, and edges come from `../knowledge/<db>/joins.yaml`. Weight each edge by its
    confidence. Ignore edges to very generic hub tables when deciding clusters. For example, nearly everything
    joins to `users` or `organizations`; such a hub belongs to its own domain (e.g. `accounts`), not to every
    domain.
@@ -22,7 +22,7 @@ Group tables by **how they connect**, not by how they are named. Use naming only
    `inventory`, `auth`, `analytics`, `support`, `legacy`. Names must be unique.
 
 ## Output
-Write one file per domain, `../knowledge/domains/<domain>.md`, holding for now only the table list:
+Write one file per domain, `../knowledge/<db>/domains/<domain>.md`, holding for now only the table list:
 
 ```markdown
 # Domain: billing

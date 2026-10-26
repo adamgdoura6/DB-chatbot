@@ -11,7 +11,7 @@ Never run this while answering a user's question. It is an offline job.
    current schema.
 2. **Learn.** Follow failure-learner. It turns new failed, corrected and liked traces into proposals.
 3. **Promote.** Follow knowledge-promotion. It runs the contradiction check, verification on data, and the
-   db-eval regression gate, then commits.
+   db-eval regression gate, then applies what passed.
 4. **Refresh.** If it is the weekly run, also follow drift-monitor sections 2-4.
 5. **Report.** Follow human-review (`../shared/skills/human-review/SKILL.md`) → knowledge-gaps report. Tell the user:
    - number of proposals: promoted, rejected, needing review;
@@ -21,7 +21,8 @@ Never run this while answering a user's question. It is an offline job.
 
 ## Scheduling
 Any scheduler can run this with any agent CLI that has the repository checked out. Run it from
-`talk-to-your-database/` and give the agent write access to the parent folder (`knowledge/`, `learning/`):
+`talk-to-your-database/` and give the agent write access to the parent folder (`knowledge/`, `learning/`).
+It learns for the active database; set `DBCHAT_DATABASE=<name>` to pick another one:
 - Claude Code: `claude -p "Follow .agents/skills/db-learn/SKILL.md" --add-dir ..`
 - Codex: `codex exec --add-dir .. "Follow .agents/skills/db-learn/SKILL.md"`
 - or a CI job running one of the above nightly.

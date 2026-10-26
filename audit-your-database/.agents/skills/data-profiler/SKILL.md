@@ -9,7 +9,7 @@ Cheap, sampled SQL only. Never run unbounded scans on large tables.
 `../shared/dbq.py` masks PII in all output automatically; never try to get around that.
 
 ## Inputs
-`../knowledge/_raw/catalog/tables.json`, `columns.json`. For an incremental audit, use the list of new or changed
+`../knowledge/<db>/_raw/catalog/tables.json`, `columns.json`. For an incremental audit, use the list of new or changed
 tables from the db-onboarding skill.
 
 ## Per table
@@ -40,12 +40,12 @@ when either is true:
   values by pattern.
 
 For each PII column:
-- add it to `pii_columns` in `../knowledge/policies.yaml`;
+- add it to `pii_columns` in `../knowledge/<db>/policies.yaml`;
 - if it is a secret (passwords, tokens, API keys, hashes), also add it to `blocked_columns`;
 - never put its values in `values.yaml` or in any card.
 
 ## Output
-- `../knowledge/_raw/profiles/<schema>.<table>.json`:
+- `../knowledge/<db>/_raw/profiles/<schema>.<table>.json`:
   ```json
   {"table": "public.orders", "rows": 1200000, "sampled": true,
    "freshness": {"column": "created_at", "max": "2026-10-08T09:12:00Z"},
@@ -53,8 +53,8 @@ For each PII column:
                "email": {"pii": "email"}},
    "samples": [ ... masked rows ... ]}
   ```
-- Value index entries added to `../knowledge/values.yaml` (format in the knowledge-store skill).
-- Updated `../knowledge/policies.yaml` (`pii_columns`, `blocked_columns`).
+- Value index entries added to `../knowledge/<db>/values.yaml` (format in the knowledge-store skill).
+- Updated `../knowledge/<db>/policies.yaml` (`pii_columns`, `blocked_columns`).
 
 ## Budget
 Use a timeout of 20000 ms. If a query on a table times out, record `"profile_error": "timeout"` and move on.

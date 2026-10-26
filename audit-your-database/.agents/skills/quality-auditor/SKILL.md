@@ -1,6 +1,6 @@
 ---
 name: quality-auditor
-description: Step 6 of the database audit (can run alongside table-interpreter). Finds legacy and temp tables, empty and stale tables, orphan rows, duplicates, missing primary keys, soft-delete and test-data markers, and overlapping sources of truth; writes ../knowledge/quality.yaml and decides canonical vs legacy.
+description: Step 6 of the database audit (can run alongside table-interpreter). Finds legacy and temp tables, empty and stale tables, orphan rows, duplicates, missing primary keys, soft-delete and test-data markers, and overlapping sources of truth; writes ../knowledge/<db>/quality.yaml and decides canonical vs legacy.
 ---
 
 # Quality auditor
@@ -27,7 +27,7 @@ join to, and which one appears in the query logs. Then decide which table is can
 If the evidence conflicts, add an open question.
 
 ## Output
-`../knowledge/quality.yaml`:
+`../knowledge/<db>/quality.yaml`:
 ```yaml
 - table: public.orders_old
   kind: duplicate_table

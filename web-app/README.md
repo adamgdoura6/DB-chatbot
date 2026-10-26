@@ -36,7 +36,7 @@ The frontend forwards `/api/*` to the backend (`BACKEND_URL`, default `http://12
 | `simulated` | always canned replies, for working on the look |
 
 The agent runs with an allow-list of tools (`backend/app/services/agent.py`): file read/write, subagents, and only the
-shell commands the skills use (`dbq.py`, `connect.py --check`, git). All database access still goes
+shell commands the skills use (`dbq.py`, `connect.py --check`). All database access still goes
 through `shared/dbq.py`.
 
 ## Connecting a database

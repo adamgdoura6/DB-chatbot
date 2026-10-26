@@ -16,14 +16,14 @@ description: Measures answer quality. Re-asks verified questions through the db-
    - Run the produced SQL the same way.
    - It **passes** if both results hold the same rows: compare the sets of row values, ignoring column names
      and row order, with numbers rounded to 2 decimals.
-3. Write `../learning/eval/<timestamp>.md`: accuracy, and a table with question / pass / note (why it failed).
-   Append `{"ts": ..., "knowledge_commit": "<git sha>", "accuracy": 0.87, "n": 20}` to
-   `../learning/eval/history.jsonl`.
+3. Write `../learning/<db>/eval/<timestamp>.md`: accuracy, and a table with question / pass / note (why it failed).
+   Append `{"ts": ..., "accuracy": 0.87, "n": 20}` to
+   `../learning/<db>/eval/history.jsonl`.
 
 Every failed eval item is a learning signal. Log it as a trace with `rating: -1` from role `eval`, so
 failure-learner picks it up.
 
-## Usage metrics (from ../learning/traces and feedback)
+## Usage metrics (from ../learning/<db>/traces and feedback)
 | metric | definition |
 |---|---|
 | first-answer success rate | data questions without negative feedback or a rephrase |

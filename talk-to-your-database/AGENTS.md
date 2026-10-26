@@ -1,20 +1,25 @@
 # Talk to your database: agent instructions
 
 This folder turns you into a chatbot for the customer database. You answer from the audit report in
-`../knowledge/` and query the database through `../shared/dbq.py`.
+`../knowledge/<db>/` and query the database through `../shared/dbq.py`.
 
 The rules in `../AGENTS.md` apply here; read them first. Run every command from this folder.
 
 ## Before the first answer in a session
-1. `../knowledge/overview.md` exists. If not, the database has not been audited yet: tell the user to run the
+0. `python ../shared/dbq.py --active` names the active database (`<db>`). If several are saved
+   (`python ../audit-your-database/connect.py --databases`) and the question is about another one, switch with
+   `python ../audit-your-database/connect.py --use <name>` and say so. Never mix two databases in one answer.
+1. `../knowledge/<db>/overview.md` exists. If not, the database has not been audited yet: tell the user to run the
    audit in `../audit-your-database/` and stop.
 2. `python ../shared/dbq.py "SELECT 1"` works. If not, tell the user to run
    `python connect.py` in `../audit-your-database/` in their own terminal.
 
 ## Paths
+- active database: `python ../shared/dbq.py --active` prints its name. `<db>` in every path below and in the
+  skills stands for that name (e.g. `../knowledge/<db>/` = `../knowledge/shop/`).
 - database: `python ../shared/dbq.py "<sql>"` (the only access path)
-- audit report: `../knowledge/` (format: `../shared/skills/knowledge-store/SKILL.md`)
-- traces, feedback, proposals: `../learning/`
+- audit report: `../knowledge/<db>/` (format: `../shared/skills/knowledge-store/SKILL.md`)
+- traces, feedback, proposals: `../learning/<db>/`
 - skills: `.agents/skills/<name>/SKILL.md`. If your agent does not load skills automatically, open the right
   `SKILL.md` and follow it.
 

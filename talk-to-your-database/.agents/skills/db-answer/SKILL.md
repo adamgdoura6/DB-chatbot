@@ -1,6 +1,6 @@
 ---
 name: db-answer
-description: Entry point for answering any question about the connected company database - "how many...", "revenue last month", "which customers...", "where do we store invoices?", "what does status 3 mean?". Routes the question, retrieves knowledge, writes and runs one read-only SQL query, checks the result, answers with the SQL and tables used, and logs a trace. Requires a completed audit (../knowledge/).
+description: Entry point for answering any question about the connected company database - "how many...", "revenue last month", "which customers...", "where do we store invoices?", "what does status 3 mean?". Routes the question, retrieves knowledge, writes and runs one read-only SQL query, checks the result, answers with the SQL and tables used, and logs a trace. Requires a completed audit (../knowledge/<db>/).
 ---
 
 # Answer a question about the database
@@ -11,7 +11,7 @@ subagents only in the special cases at the end.
 ## 1. Route
 Classify the question:
 - **schema**: where or how something is stored, what a table or column means, how tables relate. Answer from
-  `../knowledge/` only; no SQL needed. Cite the cards you used.
+  `../knowledge/<db>/` only; no SQL needed. Cite the cards you used.
 - **data**: needs numbers or records. Continue below.
 - **ambiguous**: no correct answer exists without a choice only the user can make, e.g. "revenue" when gross
   and net both exist and `glossary.yaml` has a `clarify:` for it. Ask the one clarifying question, and stop. A
@@ -57,7 +57,7 @@ Reply with:
 Never state a number that is not in the query result.
 
 ## 6. Log the trace
-Append one JSON line to `../learning/traces/<YYYY-MM-DD>.jsonl`:
+Append one JSON line to `../learning/<db>/traces/<YYYY-MM-DD>.jsonl`:
 ```json
 {"id": "t-<yyyymmddHHMMSS>-<4 random chars>", "ts": "<iso>", "question": "...", "route": "data",
  "retrieved": {"tables": [...], "metrics": [...], "verified_queries": [...]},
